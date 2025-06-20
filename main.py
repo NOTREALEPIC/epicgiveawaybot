@@ -89,7 +89,7 @@ async def epicgiveaway(interaction: discord.Interaction,
     embed.set_footer(text=f"Started by {interaction.user.display_name}")
     embed.timestamp = discord.utils.utcnow()
 
-   log_channel_id = (1385654852209610957, 1385660621470830702)  # 🔧 Replace this with your logging channel ID
+    log_channel_ids = [1385654852209610957, 1385660621470830702]  # 🔧 Replace with your logging channel IDs
     view = GiveawayView(duration * 60, winners, log_channel_id)
     message = await channel.send(embed=embed, view=view)
     view.message = message

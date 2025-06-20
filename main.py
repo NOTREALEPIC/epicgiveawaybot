@@ -105,5 +105,5 @@ async def on_ready():
 # === Run Everything ===
 if __name__ == "__main__":
     Thread(target=run_flask).start()
-    TOKEN = os.environ.get("TOKEN") or "your_bot_token_here"
+    TOKEN = os.environ.get("BABU") or "your_bot_token_here"
     bot.run(TOKEN)

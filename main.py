@@ -5,17 +5,17 @@ from flask import Flask
 from threading import Thread
 import asyncio, random, os
 
-# === Flask Setup for Uptime ===
+# === Flask for Render Uptime ===
 app = Flask(__name__)
 
 @app.route('/')
 def home():
-    return "💖 EpicGiveaway Bot is running!"
+    return "🎁 EpicGiveaway Bot is running on Python 3.13.4"
 
 def run_flask():
     app.run(host='0.0.0.0', port=8080)
 
-# === Discord Bot Setup ===
+# === Bot Setup ===
 intents = discord.Intents.default()
 intents.message_content = True
 intents.guilds = True
@@ -35,13 +35,13 @@ class GiveawayView(discord.ui.View):
     @discord.ui.button(label="🎉 Enter Giveaway", style=discord.ButtonStyle.green)
     async def enter_button(self, interaction: discord.Interaction, button: discord.ui.Button):
         if interaction.user.id in self.participants:
-            await interaction.response.send_message("You've already entered!", ephemeral=True)
+            await interaction.response.send_message("❌ You've already entered!", ephemeral=True)
         else:
             self.participants.add(interaction.user.id)
-            await interaction.response.send_message("You're entered! Good luck 💖", ephemeral=True)
+            await interaction.response.send_message("✅ You're in! Good luck!", ephemeral=True)
             log_channel = interaction.client.get_channel(self.log_channel_id)
             if log_channel:
-                await log_channel.send(f"{interaction.user.mention} entered the giveaway!")
+                await log_channel.send(f"📝 {interaction.user.mention} entered the giveaway!")
 
     async def on_timeout(self):
         if self.message:
@@ -50,23 +50,22 @@ class GiveawayView(discord.ui.View):
     async def announce_winners(self):
         embed = self.message.embeds[0]
         if len(self.participants) < self.winners_count:
-            result = "Not enough participants to select winners."
+            result = "❌ Not enough participants to choose winners."
         else:
             winners = random.sample(list(self.participants), self.winners_count)
-            result = f"🎊 Congratulations: {', '.join(f'<@{uid}>' for uid in winners)}"
-
-        embed.add_field(name="🎁 Giveaway Ended", value=result, inline=False)
+            result = f"🎊 Winner(s): {', '.join(f'<@{uid}>' for uid in winners)}"
+        embed.add_field(name="🏁 Giveaway Ended", value=result, inline=False)
         await self.message.edit(embed=embed, view=None)
 
 # === Slash Command ===
-@bot.tree.command(name="epicgiveaway", description="Start a fun giveaway 🎉")
+@bot.tree.command(name="epicgiveaway", description="Start a giveaway 🎁")
 @app_commands.describe(
     title="Giveaway Title",
-    sponsor="Who is sponsoring?",
+    sponsor="Sponsor Name",
     duration="Duration in minutes",
     item="Giveaway Item",
     winners="Number of winners",
-    channel="Channel to post giveaway in"
+    channel="Channel to post the giveaway"
 )
 async def epicgiveaway(interaction: discord.Interaction,
                        title: str,
@@ -75,34 +74,33 @@ async def epicgiveaway(interaction: discord.Interaction,
                        item: str,
                        winners: int,
                        channel: discord.TextChannel):
-    
-    await interaction.response.send_message(f"Giveaway started in {channel.mention}! 🎉", ephemeral=True)
+    await interaction.response.send_message(f"🎉 Giveaway starting in {channel.mention}!", ephemeral=True)
 
     embed = discord.Embed(
         title=f"🎉 {title} 🎉",
-        description=f"**Item**: {item}\n**Sponsor**: {sponsor}\n**Duration**: {duration} min\n**Winners**: {winners}\nClick the button below to enter 💖",
+        description=f"**Item**: {item}\n**Sponsor**: {sponsor}\n**Duration**: {duration} min\n**Winners**: {winners}\n\nClick the button below to enter!",
         color=discord.Color.pink()
     )
-    embed.set_footer(text=f"Hosted by {interaction.user.display_name}")
+    embed.set_footer(text=f"Started by {interaction.user.display_name}")
     embed.timestamp = discord.utils.utcnow()
 
-    log_channel_id = 123456789012345678  # 🔧 CHANGE to your log channel ID
+    log_channel_id = 123456789012345678  # 🔧 REPLACE with your logging channel ID
     view = GiveawayView(duration * 60, winners, log_channel_id)
     message = await channel.send(embed=embed, view=view)
     view.message = message
 
-# === Ready & Start ===
+# === Bot Events ===
 @bot.event
 async def on_ready():
-    print(f"Logged in as {bot.user}")
+    print(f"✅ Logged in as {bot.user}")
     try:
         synced = await bot.tree.sync()
-        print(f"Synced {len(synced)} command(s).")
+        print(f"🔄 Synced {len(synced)} slash commands.")
     except Exception as e:
-        print(f"Sync error: {e}")
+        print(f"⚠️ Sync Error: {e}")
 
-# === Start Everything ===
+# === Run Bot + Flask ===
 if __name__ == "__main__":
     Thread(target=run_flask).start()
-    TOKEN = os.environ.get("TOKEN") or "your_bot_token_here"  # replace for local test
+    TOKEN = os.environ.get("TOKEN") or "your_bot_token_here"
     bot.run(TOKEN)

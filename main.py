@@ -1,3 +1,9 @@
+# === PYTHON 3.13 PATCH ===
+import sys
+import types
+sys.modules['audioop'] = types.SimpleNamespace()  # Fix for Python 3.13.4 crash
+
+# === Imports ===
 import discord
 from discord.ext import commands
 from discord import app_commands
@@ -5,22 +11,19 @@ from flask import Flask
 from threading import Thread
 import asyncio, random, os
 
-# === Flask for Render Uptime ===
+# === Flask Web Server for Render Uptime ===
 app = Flask(__name__)
-
 @app.route('/')
 def home():
-    return "🎁 EpicGiveaway Bot is running on Python 3.13.4"
-
+    return "💖 EpicGiveaway Bot running on Python 3.13.4 (audioop patched)"
 def run_flask():
     app.run(host='0.0.0.0', port=8080)
 
-# === Bot Setup ===
+# === Discord Bot Setup ===
 intents = discord.Intents.default()
 intents.message_content = True
 intents.guilds = True
 intents.members = True
-
 bot = commands.Bot(command_prefix="!", intents=intents)
 
 # === Giveaway View ===
@@ -38,10 +41,10 @@ class GiveawayView(discord.ui.View):
             await interaction.response.send_message("❌ You've already entered!", ephemeral=True)
         else:
             self.participants.add(interaction.user.id)
-            await interaction.response.send_message("✅ You're in! Good luck!", ephemeral=True)
+            await interaction.response.send_message("✅ You're entered! Good luck 💖", ephemeral=True)
             log_channel = interaction.client.get_channel(self.log_channel_id)
             if log_channel:
-                await log_channel.send(f"📝 {interaction.user.mention} entered the giveaway!")
+                await log_channel.send(f"{interaction.user.mention} entered the giveaway!")
 
     async def on_timeout(self):
         if self.message:
@@ -74,17 +77,17 @@ async def epicgiveaway(interaction: discord.Interaction,
                        item: str,
                        winners: int,
                        channel: discord.TextChannel):
-    await interaction.response.send_message(f"🎉 Giveaway starting in {channel.mention}!", ephemeral=True)
+    await interaction.response.send_message(f"🎉 Giveaway started in {channel.mention}!", ephemeral=True)
 
     embed = discord.Embed(
         title=f"🎉 {title} 🎉",
         description=f"**Item**: {item}\n**Sponsor**: {sponsor}\n**Duration**: {duration} min\n**Winners**: {winners}\n\nClick the button below to enter!",
-        color=discord.Color.pink()
+        color=discord.Color.blurple()
     )
     embed.set_footer(text=f"Started by {interaction.user.display_name}")
     embed.timestamp = discord.utils.utcnow()
 
-    log_channel_id = 123456789012345678  # 🔧 REPLACE with your logging channel ID
+    log_channel_id = 123456789012345678  # 🔧 Replace this with your logging channel ID
     view = GiveawayView(duration * 60, winners, log_channel_id)
     message = await channel.send(embed=embed, view=view)
     view.message = message
@@ -99,7 +102,7 @@ async def on_ready():
     except Exception as e:
         print(f"⚠️ Sync Error: {e}")
 
-# === Run Bot + Flask ===
+# === Run Everything ===
 if __name__ == "__main__":
     Thread(target=run_flask).start()
     TOKEN = os.environ.get("TOKEN") or "your_bot_token_here"

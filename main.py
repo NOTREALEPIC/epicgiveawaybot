@@ -82,7 +82,7 @@ async def epicgiveaway(interaction: discord.Interaction,
 
     embed = discord.Embed(
         title=f"🎉 {title} 🎉",
-        description=f"**Item**: {item}\n**Sponsor**: {sponsor}\n**Duration**: {duration} min\n**Winners**: {winners}\n\nClick the button below to enter!",
+        description=f"@LEGIT\n**Item**: {item}\n**Sponsor**: {sponsor}\n**Duration**: {duration} min\n**Winners**: {winners}\n\nClick the button below to enter!",
         color=discord.Color.blurple()
     )
     embed.set_footer(text=f"Started by {interaction.user.display_name}")

@@ -62,7 +62,6 @@ class GiveawayView(discord.ui.View):
 
 # === Slash Command ===
 @bot.tree.command(name="epicgiveaway", description="Start a giveaway 🎁")
-@app_commands.default_permissions(administrator=True)
 @app_commands.checks.has_role("ROOT")
 @app_commands.describe(
     title="Giveaway Title",

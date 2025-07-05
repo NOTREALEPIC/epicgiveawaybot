@@ -19,7 +19,7 @@ bot = commands.Bot(command_prefix="!", intents=intents)
 # === Uptime Tracking ===
 start_time = datetime.datetime.utcnow()
 last_downtime = None
-status_channel_id = 123456789012345678  # 🔧 Replace with your uptime channel ID
+status_channel_id = 1385654852209610957  # 🔧 Replace with your uptime channel ID
 status_message = None
 
 def format_uptime(delta):

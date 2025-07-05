@@ -7,17 +7,7 @@ sys.modules['audioop'] = types.SimpleNamespace()  # Fix for Python 3.13.4 crash
 import discord
 from discord.ext import commands
 from discord import app_commands
-from flask import Flask
-from threading import Thread
 import asyncio, random, os
-
-# === Flask Web Server for Render Uptime ===
-app = Flask(__name__)
-@app.route('/')
-def home():
-    return "💖 EpicGiveaway Bot running on Python 3.13.4 (audioop patched)"
-def run_flask():
-    app.run(host='0.0.0.0', port=8080)
 
 # === Discord Bot Setup ===
 intents = discord.Intents.default()
@@ -103,8 +93,10 @@ async def on_ready():
     except Exception as e:
         print(f"⚠️ Sync Error: {e}")
 
-# === Run Everything ===
+# === Run the Bot ===
 if __name__ == "__main__":
-    Thread(target=run_flask).start()
-    ASMR = os.environ.get("BABU")
-    bot.run(ASMR)
+    TOKEN = os.getenv("BABU")  # 👈 Set this env var in Zeabur
+    if not TOKEN:
+        print("❌ Environment variable 'BABU' not found!")
+        exit()
+    bot.run(TOKEN)

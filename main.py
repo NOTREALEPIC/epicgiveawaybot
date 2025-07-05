@@ -7,17 +7,20 @@ sys.modules['audioop'] = types.SimpleNamespace()  # Fix for Python 3.13.4 crash
 import discord
 from discord.ext import commands, tasks
 from discord import app_commands
-import asyncio, random, os, datetime
+import asyncio, random, os
+from datetime import datetime, timedelta
+import pytz
 
-# === Bot Setup ===
+# === Discord Bot Setup ===
 intents = discord.Intents.default()
 intents.message_content = True
 intents.guilds = True
 intents.members = True
 bot = commands.Bot(command_prefix="!", intents=intents)
 
-# === Uptime Tracking ===
-start_time = datetime.datetime.utcnow()
+# === Uptime Tracker ===
+tz = pytz.timezone("Asia/Kolkata")
+start_time = datetime.now(tz)
 last_downtime = None
 status_channel_id = 1385654852209610957  # 🔧 Replace with your uptime channel ID
 status_message = None
@@ -26,19 +29,21 @@ def format_uptime(delta):
     days = delta.days
     hours, rem = divmod(delta.seconds, 3600)
     minutes, seconds = divmod(rem, 60)
-    return f"{days:02}:{hours:02}:{minutes:02}:{seconds:02}"
+    return f"{days:02}d:{hours:02}h:{minutes:02}m:{seconds:02}s"
 
-@tasks.loop(seconds=40)
+@tasks.loop(seconds=60)
 async def update_uptime():
     global status_message
-    now = datetime.datetime.utcnow()
+    now = datetime.now(tz)
     uptime = format_uptime(now - start_time)
-    downtime = format_uptime(last_downtime) if last_downtime else "None"
+    down_at = last_downtime.strftime("%I:%M %p %Z") if last_downtime else "None"
 
-    embed = discord.Embed(title="🟢 ZEBURE TEST", color=discord.Color.green())
+    embed = discord.Embed(title="🟢 ZEABUR TEST", color=discord.Color.green())
+    embed.add_field(name="🟩 Status", value="Online ✅", inline=True)
+    embed.add_field(name="🕒 Start Time", value=start_time.strftime("%I:%M %p %Z"), inline=True)
     embed.add_field(name="⏱ Uptime", value=uptime, inline=True)
-    embed.add_field(name="🛑 Last Downtime", value=downtime, inline=True)
-    embed.set_footer(text="Updated every 40s")
+    embed.add_field(name="🛑 Last Downtime", value=down_at, inline=True)
+    embed.set_footer(text="Updated every 60s")
 
     channel = bot.get_channel(status_channel_id)
     if not channel:
@@ -50,14 +55,14 @@ async def update_uptime():
         else:
             await status_message.edit(embed=embed)
     except discord.HTTPException as e:
-        print(f"Failed to update uptime message: {e}")
+        print(f"❌ Failed to update uptime message: {e}")
 
 @bot.event
 async def on_connect():
     global start_time, last_downtime
-    now = datetime.datetime.utcnow()
+    now = datetime.now(tz)
     if start_time:
-        last_downtime = now - start_time
+        last_downtime = now
     start_time = now
 
 # === Giveaway View ===

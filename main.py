@@ -1,26 +1,31 @@
 # === PYTHON 3.13 PATCH ===
 import sys
 import types
-sys.modules['audioop'] = types.SimpleNamespace()  # Fix for Python 3.13.4 crash
+sys.modules['audioop'] = types.SimpleNamespace()
 
 # === Imports ===
 import discord
 from discord.ext import commands, tasks
 from discord import app_commands
-import asyncio, random, os, datetime
+import asyncio, random, os, datetime, pytz
 
-# === Bot Setup ===
+# === Discord Bot Setup ===
 intents = discord.Intents.default()
 intents.message_content = True
 intents.guilds = True
 intents.members = True
 bot = commands.Bot(command_prefix="!", intents=intents)
 
-# === Uptime Tracking ===
+# === Uptime Tracker Config ===
+IST = pytz.timezone('Asia/Kolkata')
 start_time = datetime.datetime.utcnow()
-last_downtime = None
-status_channel_id = 1385654852209610957  # 🔧 Replace with your uptime channel ID
+last_end_time = None
+status_channel_id = 1385654852209610957  # ✅ Replace with your channel ID
 status_message = None
+is_online = True
+
+def format_ist(dt):
+    return dt.astimezone(IST).strftime('%I:%M %p IST')
 
 def format_uptime(delta):
     days = delta.days
@@ -30,35 +35,40 @@ def format_uptime(delta):
 
 @tasks.loop(seconds=40)
 async def update_uptime():
-    global status_message
+    global status_message, is_online
     now = datetime.datetime.utcnow()
     uptime = format_uptime(now - start_time)
-    downtime = format_uptime(last_downtime) if last_downtime else "None"
 
-    embed = discord.Embed(title="🟢 ZEBURE TEST", color=discord.Color.green())
-    embed.add_field(name="⏱ Uptime", value=uptime, inline=True)
-    embed.add_field(name="🛑 Last Downtime", value=downtime, inline=True)
-    embed.set_footer(text="Updated every 40s")
+    embed = discord.Embed(title="📌 ZEBURE TEST", color=discord.Color.green() if is_online else discord.Color.red())
+    embed.add_field(name="🟢 Status", value="Online" if is_online else "Offline", inline=False)
+    embed.add_field(name="🕐 Start Time", value=format_ist(start_time), inline=True)
+    embed.add_field(name="🛑 End Time", value=format_ist(last_end_time) if last_end_time else "N/A", inline=True)
+    embed.add_field(name="⏱ Uptime", value=uptime, inline=False)
+    embed.set_footer(text="Auto-updates every 40 seconds")
 
     channel = bot.get_channel(status_channel_id)
-    if not channel:
-        return
-
-    try:
-        if not status_message:
-            status_message = await channel.send(embed=embed)
-        else:
-            await status_message.edit(embed=embed)
-    except discord.HTTPException as e:
-        print(f"Failed to update uptime message: {e}")
+    if channel:
+        try:
+            if not status_message:
+                status_message = await channel.send(embed=embed)
+            else:
+                await status_message.edit(embed=embed)
+        except Exception as e:
+            print(f"⚠️ Failed to update embed: {e}")
 
 @bot.event
 async def on_connect():
-    global start_time, last_downtime
-    now = datetime.datetime.utcnow()
-    if start_time:
-        last_downtime = now - start_time
-    start_time = now
+    global start_time, last_end_time, is_online
+    is_online = True
+    last_end_time = datetime.datetime.utcnow()  # Set end of last downtime
+    start_time = datetime.datetime.utcnow()     # New uptime start
+    print("🔌 Bot connected")
+
+@bot.event
+async def on_disconnect():
+    global is_online
+    is_online = False
+    print("❌ Bot disconnected")
 
 # === Giveaway View ===
 class GiveawayView(discord.ui.View):
@@ -127,7 +137,7 @@ async def epicgiveaway(interaction: discord.Interaction,
     message = await channel.send(embed=embed, view=view)
     view.message = message
 
-# === Bot Ready Event ===
+# === Bot Ready ===
 @bot.event
 async def on_ready():
     print(f"✅ Logged in as {bot.user}")
@@ -136,12 +146,11 @@ async def on_ready():
         print(f"🔄 Synced {len(synced)} slash commands.")
     except Exception as e:
         print(f"⚠️ Sync Error: {e}")
-    
     update_uptime.start()
 
 # === Run the Bot ===
 if __name__ == "__main__":
-    TOKEN = os.getenv("BABU")  # ✅ Add your token as an env variable in Zeabur
+    TOKEN = os.getenv("BABU")  # ✅ Set your bot token in Zeabur as BABU env variable
     if not TOKEN:
         print("❌ Environment variable 'BABU' not found!")
         exit()

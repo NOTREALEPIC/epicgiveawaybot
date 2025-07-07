@@ -36,7 +36,7 @@ bot = commands.Bot(command_prefix="!", intents=intents)
 # === Uptime Embed ===
 tz = pytz.timezone("Asia/Kolkata")
 start_time = datetime.now(tz)
-status_channel_id = 1385654852209610957
+status_channel_id = 1391327447764435005
 status_message_id = int(os.getenv("UPTIME_MSG_ID", "0"))
 status_message = None
 

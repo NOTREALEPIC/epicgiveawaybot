@@ -1,28 +1,29 @@
-# === PYTHON 3.13 PATCH ===
-import sys
-import types
-sys.modules['audioop'] = types.SimpleNamespace()  # Fix for Python 3.13.4 crash
+# === PATCH for Python 3.13.4 crash (NO audio used) ===
+import sys, types
+sys.modules['audioop'] = types.SimpleNamespace()
 
 # === Imports ===
 import discord
 from discord.ext import commands, tasks
 from discord import app_commands
 import asyncio, random, os
-from datetime import datetime, timedelta
+from datetime import datetime
 import pytz
 
-# === Discord Bot Setup ===
+# === Bot Setup ===
 intents = discord.Intents.default()
 intents.message_content = True
 intents.guilds = True
 intents.members = True
 bot = commands.Bot(command_prefix="!", intents=intents)
 
-# === Uptime Tracker ===
+# === Uptime Settings ===
 tz = pytz.timezone("Asia/Kolkata")
 start_time = datetime.now(tz)
-last_downtime = None
-status_channel_id = 1385654852209610957  # 🔧 Replace with your uptime channel ID
+last_update_time = None
+
+status_channel_id = 1385654852209610957  # Replace with your channel ID
+status_message_id = int(os.getenv("UPTIME_MSG_ID", "0"))
 status_message = None
 
 def format_uptime(delta):
@@ -31,39 +32,30 @@ def format_uptime(delta):
     minutes, seconds = divmod(rem, 60)
     return f"{days:02}d:{hours:02}h:{minutes:02}m:{seconds:02}s"
 
-@tasks.loop(seconds=60)
+@tasks.loop(seconds=20)
 async def update_uptime():
-    global status_message
+    global status_message, last_update_time
     now = datetime.now(tz)
     uptime = format_uptime(now - start_time)
-    down_at = last_downtime.strftime("%I:%M %p %Z") if last_downtime else "None"
+    last_update_time = now.strftime("%I:%M:%S %p IST")
+    started = start_time.strftime("%I:%M %p IST")
 
-    embed = discord.Embed(title="🟢 ZEABUR TEST", color=discord.Color.green())
-    embed.add_field(name="🟩 Status", value="Online ✅", inline=True)
-    embed.add_field(name="🕒 Start Time", value=start_time.strftime("%I:%M %p %Z"), inline=True)
-    embed.add_field(name="⏱ Uptime", value=uptime, inline=True)
-    embed.add_field(name="🛑 Last Downtime", value=down_at, inline=True)
-    embed.set_footer(text="Updated every 60s")
+    embed = discord.Embed(title="🎉 EPIC GIVEAWAY BOT", color=discord.Color.green())
+    embed.add_field(name="START", value=f"```{started}```", inline=False)
+    embed.add_field(name="UPTIME", value=f"```{uptime}```", inline=False)
+    embed.add_field(name="LAST UPDATE", value=f"```{last_update_time}```", inline=False)
 
     channel = bot.get_channel(status_channel_id)
     if not channel:
+        print("❌ Uptime channel not found.")
         return
 
     try:
         if not status_message:
-            status_message = await channel.send(embed=embed)
-        else:
-            await status_message.edit(embed=embed)
-    except discord.HTTPException as e:
+            status_message = await channel.fetch_message(status_message_id)
+        await status_message.edit(embed=embed)
+    except Exception as e:
         print(f"❌ Failed to update uptime message: {e}")
-
-@bot.event
-async def on_connect():
-    global start_time, last_downtime
-    now = datetime.now(tz)
-    if start_time:
-        last_downtime = now
-    start_time = now
 
 # === Giveaway View ===
 class GiveawayView(discord.ui.View):
@@ -99,7 +91,8 @@ class GiveawayView(discord.ui.View):
         embed.add_field(name="🏁 Giveaway Ended", value=result, inline=False)
         await self.message.edit(embed=embed, view=None)
 
-# === Slash Command ===
+# === Slash Commands ===
+
 @bot.tree.command(name="epicgiveaway", description="Start a giveaway 🎁")
 @app_commands.checks.has_role("MOD")
 @app_commands.describe(
@@ -127,27 +120,43 @@ async def epicgiveaway(interaction: discord.Interaction,
     embed.set_footer(text=f"Started by {interaction.user.display_name}")
     embed.timestamp = discord.utils.utcnow()
 
-    log_channel_id = 1385660621470830702  # 🔧 Replace with your logging channel ID
+    log_channel_id = 1385660621470830702  # Change if needed
     view = GiveawayView(duration * 60, winners, log_channel_id)
     message = await channel.send(embed=embed, view=view)
     view.message = message
 
-# === Bot Ready Event ===
+@bot.tree.command(name="say", description="Send a dummy embed (Admin/Mod/Root only)")
+@app_commands.describe(channel="Channel to send the embed")
+async def say(interaction: discord.Interaction, channel: discord.TextChannel):
+    roles = [r.name.lower() for r in interaction.user.roles]
+    if not any(role in roles for role in ['admin', 'mod', 'root']):
+        await interaction.response.send_message("❌ You don't have permission!", ephemeral=True)
+        return
+
+    embed = discord.Embed(title="📢 Dummy Embed", description="This is a test embed from /say.", color=discord.Color.orange())
+    await channel.send(embed=embed)
+    await interaction.response.send_message(f"✅ Sent to {channel.mention}", ephemeral=True)
+
+# === Events ===
+@bot.event
+async def on_connect():
+    global start_time
+    start_time = datetime.now(tz)
+
 @bot.event
 async def on_ready():
     print(f"✅ Logged in as {bot.user}")
     try:
         synced = await bot.tree.sync()
-        print(f"🔄 Synced {len(synced)} slash commands.")
+        print(f"🔁 Synced {len(synced)} commands")
     except Exception as e:
-        print(f"⚠️ Sync Error: {e}")
-    
+        print(f"⚠️ Sync failed: {e}")
     update_uptime.start()
 
 # === Run the Bot ===
 if __name__ == "__main__":
-    TOKEN = os.getenv("BABU")  # ✅ Add your token as an env variable in Zeabur
+    TOKEN = os.getenv("BABU")
     if not TOKEN:
-        print("❌ Environment variable 'BABU' not found!")
+        print("❌ BOT TOKEN not found in env (BABU)")
         exit()
     bot.run(TOKEN)
